@@ -38,6 +38,7 @@ class Hotel(Resource):
     argumentos.add_argument('diaria')
     argumentos.add_argument('cidade')
 
+    @staticmethod
     def find_hotel(hotel_id):
         for hotel in hoteisLista:
             if hotel['hotel_id'] == hotel_id:
@@ -81,4 +82,10 @@ class Hotel(Resource):
             return novo_hotel, 200
 
     def delete(self, hotel_id):
-        pass
+        hotelToDelete = Hotel.find_hotel(hotel_id)
+        if hotelToDelete:
+            global hoteisLista
+            hoteisLista = [
+                hotel for hotel in hoteisLista if hotel['hotel_id'] != hotel_id]
+            return hotelToDelete, 200
+        return {"message": "Hotel not found."}, 404
