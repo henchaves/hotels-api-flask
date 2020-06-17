@@ -1,3 +1,4 @@
 wheel
 flask
 flask-restful
+flask-sqlalchemy
