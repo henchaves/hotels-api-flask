@@ -28,7 +28,7 @@ from models.hotel import HotelModel
 
 class Hoteis(Resource):
     def get(self):
-        return {"hoteis": hoteisLista}
+        return {"hoteis": "oi"}
 
 
 class Hotel(Resource):
@@ -43,16 +43,18 @@ class Hotel(Resource):
         hotel = HotelModel.find_hotel(hotel_id)
         if hotel:
             return hotel.json()
-        return {"message": "Hotel not found."}, 404  # Not found
+        else:
+            return {"message": f"Hotel '{hotel_id}' not found."}, 404  # Not found
 
     def post(self, hotel_id):
         if HotelModel.find_hotel(hotel_id):
             # Bad request
-            return {'message': f"hotel_id '{hotel_id}' already exists."}, 400
-        dados = Hotel.argumentos.parse_args()
-        hotel = HotelModel(hotel_id, **dados)
-        hotel.save_hotel()
-        return hotel.json()
+            return {'message': f"Hotel '{hotel_id}' already exists."}, 400
+        else:
+            dados = Hotel.argumentos.parse_args()
+            hotel = HotelModel(hotel_id, **dados)
+            hotel.save_hotel()
+            return hotel.json()
 
     def put(self, hotel_id):
         dados = Hotel.argumentos.parse_args()
@@ -67,11 +69,9 @@ class Hotel(Resource):
             return hotel.json(), 201
 
     def delete(self, hotel_id):
-        hotelToDelete = Hotel.find_hotel(hotel_id)
-        if hotelToDelete:
-            global hoteisLista
-            hoteisLista = [
-                hotel for hotel in hoteisLista if hotel['hotel_id'] != hotel_id
-            ]
-            return hotelToDelete, 200
-        return {"message": "Hotel not found."}, 404
+        hotel = HotelModel.find_hotel(hotel_id)
+        if hotel:
+            hotel.delete_hotel()
+            return {"message": f"Hotel '{hotel_id}' deleted."}, 200
+        else:
+            return {"message": f"Hotel '{hotel_id}' not found."}, 404
