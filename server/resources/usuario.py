@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required
 from werkzeug.security import safe_str_cmp
 from models.usuario import UserModel
 
@@ -22,6 +22,7 @@ class User(Resource):
         else:
             return {"message": f"User '{login}' not found."}, 404
 
+    @jwt_required
     def delete(self, login):
         user = UserModel.find_user_by_login(login)
         if user:
@@ -53,8 +54,7 @@ class UserRegister(Resource):
 
 class UserLogin(Resource):
 
-    @classmethod
-    def post(cls):
+    def post(self):
         atributos = reqparse.RequestParser()
         atributos.add_argument('login', type=str, required=True,
                                help="The field 'login' cannot be left blank.")
