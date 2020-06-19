@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restful import Api
 from resources.hotel import Hotel, Hoteis
-from resources.usuario import User, Users
+from resources.usuario import User, Users, UserRegister
 from sql_alchemy import banco
 
 app = Flask(__name__)
@@ -19,6 +19,7 @@ api.add_resource(Hoteis, '/hoteis/')
 api.add_resource(Hotel, '/hoteis/<string:hotel_id>/')
 api.add_resource(Users, '/usuarios/')
 api.add_resource(User, '/usuarios/<string:login>/')
+api.add_resource(UserRegister, '/cadastro/')
 
 banco.init_app(app)
 
