@@ -2,8 +2,7 @@ from sql_alchemy import banco
 
 
 class SiteModel(banco.Model):
-    __table__ = 'sites'
-
+    __tablename__ = 'sites'
     site_id = banco.Column(banco.Integer, primary_key=True)
     nome = banco.Column(banco.String(40))
     url = banco.Column(banco.String(80))
@@ -30,10 +29,22 @@ class SiteModel(banco.Model):
         else:
             return None
 
+    @classmethod
+    def find_site_by_id(cls, site_id):
+        site = cls.query.filter_by(site_id=site_id).first()
+        if site:
+            return site
+        else:
+            return None
+
     def save_site(self):
         banco.session.add(self)
         banco.session.commit()
 
     def delete_site(self):
+        # Deletando todos os hoteis associados ao site (Relação de composição)
+        for hotel in self.hoteis:
+            hotel.delete_hotel()
+        # Deletando site
         banco.session.delete(self)
         banco.session.commit()

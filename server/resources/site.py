@@ -1,4 +1,4 @@
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from models.site import SiteModel
 
 
@@ -8,23 +8,27 @@ class Sites(Resource):
 
 
 class Site(Resource):
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument('url')
+
     def get(self, nome):
         site = SiteModel.find_site_by_name(nome)
         if site:
             return site.json(), 200
         else:
-            return {"message": f"Site '{nome}'' not found."}, 404
+            return {"message": f"Site '{nome}' not found."}, 404
 
-    def post(self, nome, url):
+    def post(self, nome):
         if SiteModel.find_site_by_name(nome):
             return {"message": f"The site '{nome}' already exists."}, 400
         else:
-            site = SiteModel(nome, url)
+            dados = self.argumentos.parse_args()
+            site = SiteModel(nome, **dados)
             try:
                 site.save_site()
                 return site.json()
             except Exception as e:
-                return {"message": f"An internal error ({e}) ocurred trying to save site '{hotel_id}'."}, 500
+                return {"message": f"An internal error ({e}) ocurred trying to save site '{nome}'."}, 500
 
     def delete(self, nome):
         site = SiteModel.find_site_by_name(nome)
