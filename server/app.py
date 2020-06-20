@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_restful import Api
 from resources.hotel import Hotel, Hoteis
 from resources.usuario import User, Users, UserRegister, UserLogin, UserLogout
+from resources.site import Sites, Site
 from flask_jwt_extended import JWTManager
 from sql_alchemy import banco
 from blacklist import BLACKLIST
@@ -39,6 +40,8 @@ api.add_resource(User, '/usuarios/<string:login>/')
 api.add_resource(UserRegister, '/cadastro/')
 api.add_resource(UserLogin, '/login/')
 api.add_resource(UserLogout, '/logout/')
+api.add_resource(Sites, '/sites/')
+api.add_resource(Site, '/sites/<string:nome>/')
 
 banco.init_app(app)
 
