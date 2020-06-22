@@ -1,3 +1,4 @@
+from flask import make_response, render_template
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_raw_jwt
 from werkzeug.security import safe_str_cmp
@@ -23,7 +24,7 @@ class User(Resource):
         else:
             return {"message": f"User '{login}' not found."}, 404
 
-    @jwt_required
+    # @jwt_required
     def delete(self, login):
         user = UserModel.find_user_by_login(login)
         if user:
@@ -100,7 +101,12 @@ class UserConfirm(Resource):
         user = UserModel.find_user_by_id(user_id)
         if user:
             user.ativado = True
-            user.save_user()
-            return {"message": f"User '{user.login}' confirmed successfully."}, 200
+            try:
+                user.save_user()
+                # return {"message": f"User '{user.login}' confirmed successfully."}, 200
+                headers = {'Content-Type': 'text/html'}
+                return make_response(render_template('user_confirm.html', email=user.email, usuario=user.login), 200, headers)
+            except Exception as e:
+                return {"message": f"An internal error ({e}) ocurred trying to confirm user '{user.login}'."}, 500
         else:
             return {"message": f"User id '{user_id}' not found."}, 404
