@@ -1,4 +1,11 @@
 from sql_alchemy import banco
+from flask import request, url_for
+from requests import post
+
+MAILGUN_DOMAIN = "sandbox7678d1582790407a9948f037fc15b994.mailgun.org"
+MAILGUN_API_KEY = "595e7234581cbab54c9d6d6a04a718f0-468bde97-270ab189"
+FROM_TITLE = "NO-REPLY"
+FROM_EMAIL = "no-reply@restapi.com"
 
 
 class UserModel(banco.Model):
@@ -6,20 +13,40 @@ class UserModel(banco.Model):
 
     user_id = banco.Column(banco.Integer, primary_key=True)
     nome = banco.Column(banco.String(100))
-    login = banco.Column(banco.String(40))
-    senha = banco.Column(banco.String(40))
+    login = banco.Column(banco.String(40), nullable=False, unique=True)
+    email = banco.Column(banco.String(80), nullable=False, unique=True)
+    senha = banco.Column(banco.String(40), nullable=False)
+    ativado = banco.Column(banco.Boolean, default=False)
 
-    def __init__(self, nome, login, senha):
+    def __init__(self, nome, login, email, senha, ativado):
         self.nome = nome
         self.login = login
+        self.email = email
         self.senha = senha
+        self.ativado = ativado
 
     def json(self):
         return {
             "user_id": self.user_id,
             "nome": self.nome,
-            "login": self.login
+            "login": self.login,
+            "email": self.email,
+            "ativado": self.ativado
         }
+
+    def send_confirmation_email(self):
+        link = request.url_root[:-1] + \
+            url_for('userconfirm', user_id=self.user_id)
+        return post(f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+                    auth=('api', MAILGUN_API_KEY),
+                    data={'from': f"{FROM_TITLE} <{FROM_EMAIL}>",
+                          "to": self.email,
+                          "subject": "Confirmação de cadastro",
+                          "text": f"Confirme seu cadastro clicando no link a seguir: {link}",
+                          "html": f"""<html>
+                                    <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
+                                  </html>
+                               """})
 
     @classmethod
     def find_user_by_id(cls, user_id):
@@ -32,6 +59,14 @@ class UserModel(banco.Model):
     @classmethod
     def find_user_by_login(cls, login):
         user = cls.query.filter_by(login=login).first()
+        if user:
+            return user
+        else:
+            return None
+
+    @classmethod
+    def find_user_by_email(cls, email):
+        user = cls.query.filter_by(email=email).first()
         if user:
             return user
         else:

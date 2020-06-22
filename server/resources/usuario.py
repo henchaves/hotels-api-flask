@@ -1,3 +1,4 @@
+from flask import make_response, render_template
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_raw_jwt
 from werkzeug.security import safe_str_cmp
@@ -23,7 +24,7 @@ class User(Resource):
         else:
             return {"message": f"User '{login}' not found."}, 404
 
-    @jwt_required
+    # @jwt_required
     def delete(self, login):
         user = UserModel.find_user_by_login(login)
         if user:
@@ -42,15 +43,26 @@ class UserRegister(Resource):
         atributos.add_argument('nome', type=str)
         atributos.add_argument('login', type=str, required=True,
                                help="The field 'login' cannot be left blank.")
+        atributos.add_argument('email', type=str, required=True,
+                               help="The field 'email' cannot be left blank.")
         atributos.add_argument('senha', type=str, required=True,
                                help="The field 'senha' cannot be left blank.")
+        atributos.add_argument('ativado', type=bool)
         dados = atributos.parse_args()
         if UserModel.find_user_by_login(dados['login']):
-            return {"message": f"User '{dados['login']}' already exists."}
+            return {"message": f"User '{dados['login']}' already exists."}, 400
+        elif UserModel.find_user_by_email(dados['email']):
+            return {"message": f"Email '{dados['email']}' already registered."}, 400
         else:
             user = UserModel(**dados)
-            user.save_user()
-            return {"message": f"User '{dados['login']}' created successfully!"}, 201
+            user.ativado = False
+            try:
+                user.save_user()
+                user.send_confirmation_email()
+                return {"message": f"User '{dados['login']}' created successfully!"}, 201
+            except Exception as e:
+                user.delete_user()
+                return {"message": f"An internal error ({e}) ocurred trying to create user '{dados['login']}'."}, 500
 
 
 class UserLogin(Resource):
@@ -64,8 +76,11 @@ class UserLogin(Resource):
         dados = atributos.parse_args()
         user = UserModel.find_user_by_login(dados['login'])
         if user and safe_str_cmp(user.senha, dados['senha']):
-            token_de_acesso = create_access_token(identity=user.user_id)
-            return {"access_token": token_de_acesso}, 200
+            if user.ativado:
+                token_de_acesso = create_access_token(identity=user.user_id)
+                return {"access_token": token_de_acesso}, 200
+            else:
+                return {"message": "User not confirmed."}, 400
         else:
             # Unauthorized
             return {"message": "The username or password is incorrect."}, 401
@@ -78,3 +93,20 @@ class UserLogout(Resource):
         jwt_id = get_raw_jwt()['jti']  # JWT Token Identifier
         BLACKLIST.add(jwt_id)
         return {"message": "Logged out successfully!"}, 200
+
+
+class UserConfirm(Resource):
+    # /confirmacao/{user_id}
+    def get(self, user_id):
+        user = UserModel.find_user_by_id(user_id)
+        if user:
+            user.ativado = True
+            try:
+                user.save_user()
+                # return {"message": f"User '{user.login}' confirmed successfully."}, 200
+                headers = {'Content-Type': 'text/html'}
+                return make_response(render_template('user_confirm.html', email=user.email, usuario=user.login), 200, headers)
+            except Exception as e:
+                return {"message": f"An internal error ({e}) ocurred trying to confirm user '{user.login}'."}, 500
+        else:
+            return {"message": f"User id '{user_id}' not found."}, 404
