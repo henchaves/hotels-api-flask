@@ -42,17 +42,26 @@ class UserRegister(Resource):
         atributos.add_argument('nome', type=str)
         atributos.add_argument('login', type=str, required=True,
                                help="The field 'login' cannot be left blank.")
+        atributos.add_argument('email', type=str, required=True,
+                               help="The field 'email' cannot be left blank.")
         atributos.add_argument('senha', type=str, required=True,
                                help="The field 'senha' cannot be left blank.")
         atributos.add_argument('ativado', type=bool)
         dados = atributos.parse_args()
         if UserModel.find_user_by_login(dados['login']):
-            return {"message": f"User '{dados['login']}' already exists."}
+            return {"message": f"User '{dados['login']}' already exists."}, 400
+        elif UserModel.find_user_by_email(dados['email']):
+            return {"message": f"Email '{dados['email']}' already registered."}, 400
         else:
             user = UserModel(**dados)
             user.ativado = False
-            user.save_user()
-            return {"message": f"User '{dados['login']}' created successfully!"}, 201
+            try:
+                user.save_user()
+                user.send_confirmation_email()
+                return {"message": f"User '{dados['login']}' created successfully!"}, 201
+            except Exception as e:
+                user.delete_user()
+                return {"message": f"An internal error ({e}) ocurred trying to create user '{dados['login']}'."}, 500
 
 
 class UserLogin(Resource):

@@ -64,6 +64,14 @@ class UserModel(banco.Model):
         else:
             return None
 
+    @classmethod
+    def find_user_by_email(cls, email):
+        user = cls.query.filter_by(email=email).first()
+        if user:
+            return user
+        else:
+            return None
+
     def save_user(self):
         banco.session.add(self)
         banco.session.commit()
