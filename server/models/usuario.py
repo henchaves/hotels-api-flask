@@ -16,7 +16,7 @@ class UserModel(banco.Model):
     user_id = banco.Column(banco.Integer, primary_key=True)
     nome = banco.Column(banco.String(100))
     login = banco.Column(banco.String(40), nullable=False, unique=True)
-    email = banco.Column(banco.String(80), nullable=False)
+    email = banco.Column(banco.String(80), nullable=False, unique=True)
     senha = banco.Column(banco.String(40), nullable=False)
     ativado = banco.Column(banco.Boolean, default=False)
 
@@ -36,25 +36,14 @@ class UserModel(banco.Model):
             "ativado": self.ativado
         }
 
-    # def send_confirmation_email(self):
-    #     link = request.url_root[:-1] + \
-    #         url_for('userconfirm', user_id=self.user_id)
-    #     return post(f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
-    #                 auth=('api', MAILGUN_API_KEY),
-    #                 data={'from': f"{FROM_TITLE} <{FROM_EMAIL}>",
-    #                       "to": self.email,
-    #                       "subject": "Confirmação de cadastro",
-    #                       "text": f"Confirme seu cadastro clicando no link a seguir: {link}",
-    #                       "html": f"""<html>
-    #                                 <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
-    #                               </html>
-    #                            """})
     def send_confirmation_email(self):
         yag = yagmail.SMTP(EMAIL, PASSWORD)
         link = request.url_root[:-1] + \
             url_for('userconfirm', user_id=self.user_id)
-        contents = [
-            f"Confirme seu cadastro clicando no link a seguir: {link}"]
+
+        contents = [f"""<html>
+                        <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
+                    </html>"""]
         yag.send(self.email, 'NO-REPLY: Confirmação de Cadastro', contents)
 
     @classmethod
