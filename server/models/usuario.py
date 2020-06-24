@@ -1,6 +1,8 @@
 from sql_alchemy import banco
 from flask import request, url_for
 from requests import post
+import yagmail
+from email_credentials import EMAIL, PASSWORD
 
 MAILGUN_DOMAIN = "sandbox7678d1582790407a9948f037fc15b994.mailgun.org"
 MAILGUN_API_KEY = "595e7234581cbab54c9d6d6a04a718f0-468bde97-270ab189"
@@ -35,18 +37,15 @@ class UserModel(banco.Model):
         }
 
     def send_confirmation_email(self):
+        yag = yagmail.SMTP(EMAIL, PASSWORD)
         link = request.url_root[:-1] + \
             url_for('userconfirm', user_id=self.user_id)
-        return post(f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
-                    auth=('api', MAILGUN_API_KEY),
-                    data={'from': f"{FROM_TITLE} <{FROM_EMAIL}>",
-                          "to": self.email,
-                          "subject": "Confirmação de cadastro",
-                          "text": f"Confirme seu cadastro clicando no link a seguir: {link}",
-                          "html": f"""<html>
-                                    <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
-                                  </html>
-                               """})
+
+        contents = [f"""<html>
+                        <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
+                    </html>"""]
+        yag.send(self.email, 'NO-REPLY: Confirmação de Cadastro', contents)
+        yag.close()
 
     @classmethod
     def find_user_by_id(cls, user_id):
