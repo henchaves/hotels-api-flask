@@ -45,6 +45,7 @@ class UserModel(banco.Model):
                         <p>Confirme seu cadastro clicando no link a seguir: <a href="{link}">CONFIRMAR E-MAIL</a></p>
                     </html>"""]
         yag.send(self.email, 'NO-REPLY: Confirmação de Cadastro', contents)
+        yag.close()
 
     @classmethod
     def find_user_by_id(cls, user_id):
